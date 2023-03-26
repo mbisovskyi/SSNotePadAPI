@@ -1,18 +1,23 @@
 ﻿using API.Database;
 using API.Models.UserModels;
 using API.Response.UserResponses;
-using API.Services.UserServices;
+using API.Services.AuthenticationServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace API.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class UserController : ControllerBase
+    [AllowAnonymous]
+    public class AuthenticationController : AppController
     {
         private readonly DatabaseDbContext dbContext;
-        private readonly IUserService userService;
-        public UserController(DatabaseDbContext context, IUserService service)
+        private readonly IAuthenticationService userService;
+
+        public AuthenticationController(DatabaseDbContext context, IAuthenticationService service)
         {
             dbContext = context;
             userService = service;
@@ -23,15 +28,14 @@ namespace API.Controllers
         {
             if(request?.GetType() == typeof(UserCredentials)) 
             {
-                User? user = dbContext.Users.FirstOrDefault(user => user.Credentials.UserName.Equals(request.UserName, StringComparison.CurrentCultureIgnoreCase) && 
-                user.Credentials.Password.Equals(request.Password, StringComparison.CurrentCultureIgnoreCase));
-                UserCredentials? userCredentials = dbContext.Credentials.Find(user?.Id);
+                UserCredentials? foundCredentials = dbContext.Credentials.FirstOrDefault(credsRow =>
+                    credsRow.UserName.Equals(request.UserName, StringComparison.CurrentCultureIgnoreCase) &&
+                    credsRow.Password.Equals(request.Password, StringComparison.CurrentCultureIgnoreCase)
+                ) ;
 
-                if (user is not null && userCredentials is not null)
-                {
-                    return Ok(userService.GetLoginUserResponse(user, userCredentials));
-                }
-                return Forbid();   
+                User? user = dbContext.Users.Find(foundCredentials?.UserId);
+                if (user == null) return BadRequest();
+                return Ok(userService.GetLoginUserResponse(user, foundCredentials));
             }
             else
             {
@@ -42,7 +46,7 @@ namespace API.Controllers
         [HttpPost("/NewUser")]
         public async Task<IActionResult> CreateNewUser_Async(User? request)
         {
-            if (request is not null)
+            if (request?.GetType() == typeof(User))
             {
                 User? foundUser = dbContext.Users.FirstOrDefault(user => user.Credentials.UserName.Equals(request.Credentials.UserName, StringComparison.CurrentCultureIgnoreCase) || 
                 user.Credentials.Email.Equals(request.Credentials.Email, StringComparison.CurrentCultureIgnoreCase));
