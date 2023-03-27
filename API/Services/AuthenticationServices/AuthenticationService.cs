@@ -1,6 +1,7 @@
 ﻿using API.Models.UserModels;
 using API.Response.UserResponses;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
@@ -26,6 +27,14 @@ namespace API.Services.AuthenticationServices
             return loginUserResponse;
         }
 
+        public bool ValidateNewUserCredentials(User newUser, DbSet<UserCredentials> dbCredentials)
+        {
+            UserCredentials? existedCredentials = dbCredentials.FirstOrDefault(credentials => 
+            credentials.UserName.Equals(newUser.Credentials.UserName, StringComparison.CurrentCultureIgnoreCase) ||
+            credentials.Email.Equals(newUser.Credentials.Email, StringComparison.CurrentCultureIgnoreCase));
+            return existedCredentials == null;
+        }
+
         public string GenerateToken() 
         {
             var token = new JwtSecurityToken
@@ -41,5 +50,7 @@ namespace API.Services.AuthenticationServices
             var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
             return tokenString;
         }
+
+
     }
 }

@@ -1,13 +1,9 @@
 ﻿using API.Database;
 using API.Models.UserModels;
-using API.Response.UserResponses;
 using API.Services.AuthenticationServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers
 {
@@ -23,43 +19,33 @@ namespace API.Controllers
             userService = service;
         }
 
-        [HttpPost("/Login")]
-        public IActionResult LoginUser(UserCredentials? request)
+        [HttpPost("Login")]
+        public async Task<IActionResult> LoginUser(UserCredentials loginRequest)
         {
-            if(request?.GetType() == typeof(UserCredentials)) 
-            {
-                UserCredentials? foundCredentials = dbContext.Credentials.FirstOrDefault(credsRow =>
-                    credsRow.UserName.Equals(request.UserName, StringComparison.CurrentCultureIgnoreCase) &&
-                    credsRow.Password.Equals(request.Password, StringComparison.CurrentCultureIgnoreCase)
-                ) ;
+        UserCredentials? foundCredentials = await dbContext.Credentials.FirstOrDefaultAsync(credentialsRow =>
+            credentialsRow.UserName.Equals(loginRequest.UserName, StringComparison.CurrentCultureIgnoreCase) &&
+            credentialsRow.Password.Equals(loginRequest.Password, StringComparison.CurrentCultureIgnoreCase)) ;
 
-                User? user = dbContext.Users.Find(foundCredentials?.UserId);
-                if (user == null) return BadRequest();
-                return Ok(userService.GetLoginUserResponse(user, foundCredentials));
-            }
-            else
+        if (foundCredentials is not null) 
             {
-                return BadRequest();
+                User foundUser = await dbContext.Users.SingleAsync(user => user.Id.Equals(foundCredentials.UserId));
+                return Ok(userService.GetLoginUserResponse(foundUser, foundCredentials));
             }
+
+        return BadRequest("Wrong user credentials.");
         }
 
-        [HttpPost("/NewUser")]
-        public async Task<IActionResult> CreateNewUser_Async(User? request)
+        [HttpPost("NewUser")]
+        public async Task<IActionResult> CreateNewUser_Async(User newUserRequest)
         {
-            if (request?.GetType() == typeof(User))
+            bool isNewUserRequestValid = userService.ValidateNewUserCredentials(newUserRequest, dbContext.Credentials);
+            if (isNewUserRequestValid)
             {
-                User? foundUser = dbContext.Users.FirstOrDefault(user => user.Credentials.UserName.Equals(request.Credentials.UserName, StringComparison.CurrentCultureIgnoreCase) || 
-                user.Credentials.Email.Equals(request.Credentials.Email, StringComparison.CurrentCultureIgnoreCase));
-                if (foundUser is null)
-                {
-                    dbContext.Add(request);
-                    await dbContext.SaveChangesAsync();
-                    return Ok(request);
-                }
-                return BadRequest();
-
+                await dbContext.AddAsync(newUserRequest);
+                await dbContext.SaveChangesAsync();
+                return Ok("Successfully created.");
             }
-            return BadRequest();
+            return BadRequest("Not valid credentials.");
         }
     }
 }
