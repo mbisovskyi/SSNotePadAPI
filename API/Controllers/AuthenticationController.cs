@@ -1,9 +1,13 @@
 ﻿using API.Database;
 using API.Models.UserModels;
+using API.Requests.AuthenticationRequests;
+using API.Response.AuthenticationResponses;
 using API.Services.AuthenticationServices;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity.UI.V4.Pages.Account.Manage.Internal;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
 namespace API.Controllers
 {
@@ -11,41 +15,59 @@ namespace API.Controllers
     public class AuthenticationController : AppController
     {
         private readonly DatabaseDbContext dbContext;
-        private readonly IAuthenticationService userService;
+        private readonly IAuthenticationService authService;
 
         public AuthenticationController(DatabaseDbContext context, IAuthenticationService service)
         {
             dbContext = context;
-            userService = service;
+            authService = service;
         }
 
         [HttpPost("Login")]
-        public async Task<IActionResult> LoginUser(UserCredentials loginRequest)
+        public async Task<IActionResult> LoginUser_Async(LoginUserRequest loginRequest)
         {
-        UserCredentials? foundCredentials = await dbContext.Credentials.FirstOrDefaultAsync(credentialsRow =>
-            credentialsRow.UserName.Equals(loginRequest.UserName, StringComparison.CurrentCultureIgnoreCase) &&
-            credentialsRow.Password.Equals(loginRequest.Password, StringComparison.CurrentCultureIgnoreCase)) ;
-
-        if (foundCredentials is not null) 
+            if(loginRequest.IsPasswordConfirmed) 
             {
-                User foundUser = await dbContext.Users.SingleAsync(user => user.Id.Equals(foundCredentials.UserId));
-                return Ok(userService.GetLoginUserResponse(foundUser, foundCredentials));
+                UserCredentials? foundCredentials = await dbContext.Credentials.FirstOrDefaultAsync(credentialsRow =>
+                 credentialsRow.UserName.Equals(loginRequest.UserName, StringComparison.CurrentCultureIgnoreCase) &&
+                 credentialsRow.Password.Equals(loginRequest.Password, StringComparison.CurrentCultureIgnoreCase));
+
+                if (foundCredentials is not null)
+                {
+                    User foundUser = await dbContext.Users.SingleAsync(user => user.Id.Equals(foundCredentials.UserId));
+                    return Ok(authService.GetLoginUserResponse(foundUser, foundCredentials));
+                }
+
+                return BadRequest("Wrong user credentials.");
             }
 
-        return BadRequest("Wrong user credentials.");
+            return BadRequest("Password is not confirmed.");
         }
 
         [HttpPost("NewUser")]
-        public async Task<IActionResult> CreateNewUser_Async(User newUserRequest)
+        public async Task<IActionResult> CreateNewUser_Async(CreateUserRequest request)
         {
-            bool isNewUserRequestValid = userService.ValidateNewUserCredentials(newUserRequest, dbContext.Credentials);
-            if (isNewUserRequestValid)
+            if (request.IsPasswordConfirmed)
             {
-                await dbContext.AddAsync(newUserRequest);
-                await dbContext.SaveChangesAsync();
-                return Ok("Successfully created.");
+               User user = authService.NewUserRequestToUserModel(request);
+                if(authService.ValidateNewUserCredentials(user, dbContext.Credentials)) 
+                {
+                    await dbContext.Users.AddAsync(user);
+                    await dbContext.SaveChangesAsync();
+
+                    User? createdUser = await dbContext.Users.FirstOrDefaultAsync(user => user.Credentials.UserName.Equals(request.UserName, StringComparison.CurrentCultureIgnoreCase) &&
+                    user.Credentials.Email.Equals(request.Email, StringComparison.CurrentCultureIgnoreCase));
+
+                    if (createdUser != null) 
+                    {
+                        return CreatedAtRoute(request, authService.GetNewUserResponse(createdUser));
+                    }
+                    return BadRequest("Credentials were not saved.");
+                }
+                return BadRequest("Given credentials not unique.");
             }
-            return BadRequest("Not valid credentials.");
+
+            return BadRequest("Password was not confirmed.");
         }
     }
 }

@@ -1,4 +1,6 @@
 ﻿using API.Models.UserModels;
+using API.Requests.AuthenticationRequests;
+using API.Response.AuthenticationResponses;
 using API.Response.UserResponses;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,10 +17,13 @@ namespace API.Services.AuthenticationServices
         {
             config = _config;
         }
+
+        // -- RESPONSE Generators ---------------------------------------------------------------------------------------------------------
         public LoginUserResponse GetLoginUserResponse(User user, UserCredentials userCredentials)
         {
            LoginUserResponse loginUserResponse = new()
             {
+               UserId = user.Id,
                 UserName = userCredentials.UserName,
                 FirstName = user.FirstName,
                 IsOwnerOperator = user.IsOwnerOperator,
@@ -27,14 +32,43 @@ namespace API.Services.AuthenticationServices
             return loginUserResponse;
         }
 
+        public NewUserResponse GetNewUserResponse(User newUser)
+        {
+            NewUserResponse newUserResponse = new()
+            {
+                UserId = newUser.Id,
+                UserName = newUser.Credentials.UserName,
+                Email = newUser.Credentials.Email,
+                IsOwnerOperator = newUser.IsOwnerOperator,
+            };
+            return newUserResponse;
+        }
+
+        // -- From REQUEST Formatters ----------------------------------------------------------------------------------------------------
+
+        public User NewUserRequestToUserModel(CreateUserRequest newUserRequest)
+        {
+            User user = new User()
+            {
+                FirstName = newUserRequest.FirstName,
+                Credentials = new UserCredentials()
+                {
+                    UserName = newUserRequest.UserName,
+                    Password = newUserRequest.Password,
+                    Email = newUserRequest.Email.ToString(),
+                }
+            };
+            return user;
+        }
+
+        // -- OTHER Methods ----------------------------------------------------------------------------------------------------------------
         public bool ValidateNewUserCredentials(User newUser, DbSet<UserCredentials> dbCredentials)
         {
-            UserCredentials? existedCredentials = dbCredentials.FirstOrDefault(credentials => 
+            UserCredentials? existedCredentials = dbCredentials.FirstOrDefault(credentials =>
             credentials.UserName.Equals(newUser.Credentials.UserName, StringComparison.CurrentCultureIgnoreCase) ||
             credentials.Email.Equals(newUser.Credentials.Email, StringComparison.CurrentCultureIgnoreCase));
             return existedCredentials == null;
         }
-
         public string GenerateToken() 
         {
             var token = new JwtSecurityToken
@@ -50,7 +84,5 @@ namespace API.Services.AuthenticationServices
             var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
             return tokenString;
         }
-
-
     }
 }
