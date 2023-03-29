@@ -18,7 +18,7 @@ namespace API.Models.NoteModels
         [MaxLength(64)]
         public string Title { get; set; }
         [AllowNull]
-        public string Description { get; set; }
+        public string? Description { get; set; }
         public List<NoteImage>? Images { get; set; }
     }
 }

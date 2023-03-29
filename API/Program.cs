@@ -1,6 +1,7 @@
 using API.Database;
 using API.Services.AuthenticationServices;
 using API.Services.NoteCategoryServices;
+using API.Services.NoteServices;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -13,6 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 builder.Services.AddSingleton<IAuthenticationService, AuthenticationService>();
 builder.Services.AddSingleton<INoteCategoryService, NoteCategoryService>();
+builder.Services.AddSingleton<INoteService, NoteService>();
 // --- Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer( options => 
 {
