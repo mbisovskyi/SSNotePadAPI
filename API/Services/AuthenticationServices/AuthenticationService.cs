@@ -19,12 +19,12 @@ namespace API.Services.AuthenticationServices
         }
 
         // -- RESPONSE Generators ---------------------------------------------------------------------------------------------------------
-        public LoginUserResponse GetLoginUserResponse(User user, UserCredentials userCredentials)
+        public LoginUserResponse GetLoginUserResponse(User user)
         {
            LoginUserResponse loginUserResponse = new()
             {
-               UserId = user.Id,
-                UserName = userCredentials.UserName,
+                UserId = user.Id,
+                UserName = user.Credentials.UserName,
                 FirstName = user.FirstName,
                 IsOwnerOperator = user.IsOwnerOperator,
                 Token = GenerateToken(),
@@ -62,11 +62,11 @@ namespace API.Services.AuthenticationServices
         }
 
         // -- OTHER Methods ----------------------------------------------------------------------------------------------------------------
-        public bool ValidateNewUserCredentials(User newUser, DbSet<UserCredentials> dbCredentials)
+        public bool ValidateNewUserCredentials(CreateUserRequest newUserRequest, DbSet<UserCredentials> dbCredentials)
         {
             UserCredentials? existedCredentials = dbCredentials.FirstOrDefault(credentials =>
-            credentials.UserName.Equals(newUser.Credentials.UserName, StringComparison.CurrentCultureIgnoreCase) ||
-            credentials.Email.Equals(newUser.Credentials.Email, StringComparison.CurrentCultureIgnoreCase));
+            credentials.UserName.Equals(newUserRequest.UserName, StringComparison.CurrentCultureIgnoreCase) ||
+            credentials.Email.Equals(newUserRequest.Email, StringComparison.CurrentCultureIgnoreCase));
             return existedCredentials == null;
         }
         public string GenerateToken() 

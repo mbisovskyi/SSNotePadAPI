@@ -21,35 +21,24 @@ namespace API.Controllers
         [HttpGet("UserCategories")]
         public async Task<IActionResult> GetUserNoteCategories(UserNoteCategoriesRequest request) 
         {
-            List<NoteCategory> userCategories = new List<NoteCategory>();
-            userCategories = await dbContext.NoteCategories.Where(category => category.UserId.Equals(request.UserId)).ToListAsync();
+            List<NoteCategory> userCategories = await dbContext.NoteCategories.Where(category => category.UserId.Equals(request.UserId)).ToListAsync();
             return Ok(userCategories);
         }
 
         [HttpPost("Create")]
         public async Task<IActionResult> CreateNoteCategory_Async(CreateCategoryRequest createCategoryRequest) 
         {
-            bool isUserId = await dbContext.Users.SingleAsync(user => user.Id.Equals(createCategoryRequest.UserId)) != null;
-            if (isUserId)
+            List<NoteCategory> userCategories = await dbContext.NoteCategories.Where(category => category.UserId.Equals(createCategoryRequest.UserId) && 
+                category.Name.Equals(createCategoryRequest.Name, StringComparison.CurrentCultureIgnoreCase)).ToListAsync();
+
+            if(userCategories.Count <= 0) 
             {
-                NoteCategory? foundCategory = await dbContext.NoteCategories.FirstOrDefaultAsync(category => category.Name.Equals(createCategoryRequest.Name, StringComparison.CurrentCultureIgnoreCase) &&
-                category.UserId.Equals(createCategoryRequest.UserId));
-
-                if (foundCategory == null) 
-                {
-                    await dbContext.NoteCategories.AddAsync(noteCategoryService.CreateCategoryRequestToNoteCategoryModel(createCategoryRequest));
-                    await dbContext.SaveChangesAsync();
-
-                    NoteCategory createdCategory = await dbContext.NoteCategories.SingleAsync(category => category.UserId.Equals(createCategoryRequest.UserId));
-                    if (createdCategory != null) 
-                    {
-                        return Ok($"Category \"{createCategoryRequest.Name}\" was added.");
-                    }
-                    return BadRequest("Category was not saved.");
-                }
-                return BadRequest($"Category \"{createCategoryRequest.Name}\" for this user already exists.");
+                NoteCategory newCategory = noteCategoryService.CreateCategoryRequestToNoteCategoryModel(createCategoryRequest);
+                await dbContext.NoteCategories.AddAsync(newCategory);
+                await dbContext.SaveChangesAsync();
+                return Ok($"Created {newCategory.Name}");
             }
-            return NotFound("Not valid user.");
+            return BadRequest("Category already exist.");
          }
     }
 }

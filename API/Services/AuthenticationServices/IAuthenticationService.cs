@@ -9,11 +9,11 @@ namespace API.Services.AuthenticationServices
 {
     public interface IAuthenticationService
     {
-        public LoginUserResponse GetLoginUserResponse(User user, UserCredentials userCredentials);
+        public LoginUserResponse GetLoginUserResponse(User user);
         public NewUserResponse GetNewUserResponse(User newUser);
         public User NewUserRequestToUserModel(CreateUserRequest newUserRequest);
 
-        public bool ValidateNewUserCredentials(User newUser, DbSet<UserCredentials> dbCredentials);
+        public bool ValidateNewUserCredentials(CreateUserRequest newUserRequest, DbSet<UserCredentials> dbCredentials);
         public string GenerateToken();
     } 
 }

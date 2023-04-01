@@ -1,10 +1,8 @@
 ﻿using API.Database;
 using API.Models.NoteCategoryModels;
 using API.Models.NoteModels;
-using API.Models.UserModels;
 using API.Requests.NoteRequests;
 using API.Services.NoteServices;
-using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 

@@ -28,17 +28,16 @@ namespace API.Controllers
         {
             if(loginRequest.IsPasswordConfirmed) 
             {
-                UserCredentials? foundCredentials = await dbContext.Credentials.FirstOrDefaultAsync(credentialsRow =>
-                 credentialsRow.UserName.Equals(loginRequest.UserName, StringComparison.CurrentCultureIgnoreCase) &&
-                 credentialsRow.Password.Equals(loginRequest.Password, StringComparison.CurrentCultureIgnoreCase));
+                User? foundUser = await dbContext.Users.FirstOrDefaultAsync(user => user.Credentials.UserName.Equals(loginRequest.UserName, StringComparison.CurrentCultureIgnoreCase) &&
+                user.Credentials.Password.Equals(loginRequest.Password, StringComparison.CurrentCultureIgnoreCase));
 
-                if (foundCredentials is not null)
+                if (foundUser is not null)
                 {
-                    User foundUser = await dbContext.Users.SingleAsync(user => user.Id.Equals(foundCredentials.UserId));
-                    return Ok(authService.GetLoginUserResponse(foundUser, foundCredentials));
+                    foundUser.Credentials.UserName = loginRequest.UserName;
+                    return Ok(authService.GetLoginUserResponse(foundUser));
                 }
 
-                return BadRequest("Wrong user credentials.");
+                return BadRequest("Wrong credentials");
             }
 
             return BadRequest("Password is not confirmed.");
@@ -49,24 +48,15 @@ namespace API.Controllers
         {
             if (request.IsPasswordConfirmed)
             {
-               User user = authService.NewUserRequestToUserModel(request);
-                if(authService.ValidateNewUserCredentials(user, dbContext.Credentials)) 
+                if(authService.ValidateNewUserCredentials(request, dbContext.Credentials)) /* Returns true if credentials are unique */
                 {
+                    User user = authService.NewUserRequestToUserModel(request);
                     await dbContext.Users.AddAsync(user);
                     await dbContext.SaveChangesAsync();
-
-                    User? createdUser = await dbContext.Users.FirstOrDefaultAsync(user => user.Credentials.UserName.Equals(request.UserName, StringComparison.CurrentCultureIgnoreCase) &&
-                    user.Credentials.Email.Equals(request.Email, StringComparison.CurrentCultureIgnoreCase));
-
-                    if (createdUser != null) 
-                    {
-                        return CreatedAtRoute(request, authService.GetNewUserResponse(createdUser));
-                    }
-                    return BadRequest("Credentials were not saved.");
+                    return CreatedAtRoute(request, authService.GetNewUserResponse(user));
                 }
                 return BadRequest("Given credentials not unique.");
             }
-
             return BadRequest("Password was not confirmed.");
         }
     }
