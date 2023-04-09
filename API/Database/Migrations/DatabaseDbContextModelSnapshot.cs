@@ -18,26 +18,85 @@ namespace API.Database.Migrations
                 .HasAnnotation("ProductVersion", "7.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
-            modelBuilder.Entity("API.Models.User.User", b =>
+            modelBuilder.Entity("API.Models.NoteCategoryModels.NoteCategory", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<string>("FirstName")
+                    b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(24)
-                        .HasColumnType("varchar(24)");
+                        .HasMaxLength(16)
+                        .HasColumnType("varchar(16)");
 
-                    b.Property<bool>("IsOwnerOperator")
-                        .HasColumnType("tinyint(1)");
+                    b.Property<int>("NotesQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users");
+                    b.HasIndex("UserId");
+
+                    b.ToTable("NoteCategories");
                 });
 
-            modelBuilder.Entity("API.Models.User.UserCredentials", b =>
+            modelBuilder.Entity("API.Models.NoteImageModels.NoteImage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("varchar(16)");
+
+                    b.Property<int>("NoteId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NoteId");
+
+                    b.ToTable("NoteImages");
+                });
+
+            modelBuilder.Entity("API.Models.NoteModels.Note", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<string>("DateCreated")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("NoteCategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NoteCategoryId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notes");
+                });
+
+            modelBuilder.Entity("API.Models.UserModels.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -52,35 +111,63 @@ namespace API.Database.Migrations
                         .HasMaxLength(16)
                         .HasColumnType("varchar(16)");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
                     b.Property<string>("UserName")
                         .IsRequired()
-                        .HasMaxLength(24)
-                        .HasColumnType("varchar(24)");
+                        .HasColumnType("longtext");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("Credentials");
+                    b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("API.Models.User.UserCredentials", b =>
+            modelBuilder.Entity("API.Models.NoteCategoryModels.NoteCategory", b =>
                 {
-                    b.HasOne("API.Models.User.User", null)
-                        .WithOne("Credentials")
-                        .HasForeignKey("API.Models.User.UserCredentials", "UserId")
+                    b.HasOne("API.Models.UserModels.User", null)
+                        .WithMany("NoteCategories")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("API.Models.User.User", b =>
+            modelBuilder.Entity("API.Models.NoteImageModels.NoteImage", b =>
                 {
-                    b.Navigation("Credentials")
+                    b.HasOne("API.Models.NoteModels.Note", null)
+                        .WithMany("Images")
+                        .HasForeignKey("NoteId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("API.Models.NoteModels.Note", b =>
+                {
+                    b.HasOne("API.Models.NoteCategoryModels.NoteCategory", null)
+                        .WithMany("Notes")
+                        .HasForeignKey("NoteCategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("API.Models.UserModels.User", null)
+                        .WithMany("Notes")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("API.Models.NoteCategoryModels.NoteCategory", b =>
+                {
+                    b.Navigation("Notes");
+                });
+
+            modelBuilder.Entity("API.Models.NoteModels.Note", b =>
+                {
+                    b.Navigation("Images");
+                });
+
+            modelBuilder.Entity("API.Models.UserModels.User", b =>
+                {
+                    b.Navigation("NoteCategories");
+
+                    b.Navigation("Notes");
                 });
 #pragma warning restore 612, 618
         }
