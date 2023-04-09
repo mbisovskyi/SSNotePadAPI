@@ -1,13 +1,10 @@
 ﻿using API.Database;
 using API.Models.UserModels;
 using API.Requests.AuthenticationRequests;
-using API.Response.AuthenticationResponses;
 using API.Services.AuthenticationServices;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity.UI.V4.Pages.Account.Manage.Internal;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
 
 namespace API.Controllers
 {
@@ -28,12 +25,12 @@ namespace API.Controllers
         {
             if(loginRequest.IsPasswordConfirmed) 
             {
-                User? foundUser = await dbContext.Users.FirstOrDefaultAsync(user => user.Credentials.UserName.Equals(loginRequest.UserName, StringComparison.CurrentCultureIgnoreCase) &&
-                user.Credentials.Password.Equals(loginRequest.Password, StringComparison.CurrentCultureIgnoreCase));
+                User? foundUser = await dbContext.Users.FirstOrDefaultAsync(user => user.UserName.Equals(loginRequest.UserName, StringComparison.CurrentCultureIgnoreCase) &&
+                user.Password.Equals(loginRequest.Password, StringComparison.CurrentCultureIgnoreCase));
 
                 if (foundUser is not null)
                 {
-                    foundUser.Credentials.UserName = loginRequest.UserName;
+                    foundUser.UserName = loginRequest.UserName;
                     return Ok(authService.GetLoginUserResponse(foundUser));
                 }
 
@@ -48,14 +45,16 @@ namespace API.Controllers
         {
             if (request.IsPasswordConfirmed)
             {
-                if(authService.ValidateNewUserCredentials(request, dbContext.Credentials)) /* Returns true if credentials are unique */
+                User? user = await dbContext.Users.FirstOrDefaultAsync(user => user.UserName.Equals(request.UserName, StringComparison.CurrentCultureIgnoreCase) ||
+                user.Email.Equals(request.Email,StringComparison.CurrentCultureIgnoreCase));
+                if(user == null) /* Returns true if credentials are unique */
                 {
-                    User user = authService.NewUserRequestToUserModel(request);
+                    user = authService.NewUserRequestToUserModel(request);
                     await dbContext.Users.AddAsync(user);
                     await dbContext.SaveChangesAsync();
                     return CreatedAtRoute(request, authService.GetNewUserResponse(user));
                 }
-                return BadRequest("Given credentials not unique.");
+                return BadRequest("Given credentials are not unique.");
             }
             return BadRequest("Password was not confirmed.");
         }

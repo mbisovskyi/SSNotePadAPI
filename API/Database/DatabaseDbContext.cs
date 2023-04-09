@@ -11,7 +11,6 @@ namespace API.Database
         public DatabaseDbContext(DbContextOptions<DatabaseDbContext> options) : base(options) { }
 
         public DbSet<User> Users => Set<User>();
-        public DbSet<UserCredentials> Credentials => Set<UserCredentials>();
         public DbSet<Note> Notes => Set<Note>();
         public DbSet<NoteCategory> NoteCategories => Set<NoteCategory>();
         public DbSet<NoteImage> NoteImages => Set<NoteImage>();

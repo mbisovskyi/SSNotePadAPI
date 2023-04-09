@@ -19,6 +19,8 @@ namespace API.Models.NoteModels
         public string Title { get; set; }
         [AllowNull]
         public string? Description { get; set; }
+        [Required]
+        public string? DateCreated {get; set;}
         public List<NoteImage>? Images { get; set; }
     }
 }

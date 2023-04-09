@@ -10,8 +10,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace API.Database.Migrations
 {
     [DbContext(typeof(DatabaseDbContext))]
-    [Migration("20230329021657_Initial2")]
-    partial class Initial2
+    [Migration("20230409210517_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -72,6 +72,10 @@ namespace API.Database.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    b.Property<string>("DateCreated")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
                     b.Property<string>("Description")
                         .HasColumnType("longtext");
 
@@ -101,25 +105,6 @@ namespace API.Database.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasMaxLength(24)
-                        .HasColumnType("varchar(24)");
-
-                    b.Property<bool>("IsOwnerOperator")
-                        .HasColumnType("tinyint(1)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("API.Models.UserModels.UserCredentials", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("longtext");
@@ -129,20 +114,13 @@ namespace API.Database.Migrations
                         .HasMaxLength(16)
                         .HasColumnType("varchar(16)");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
                     b.Property<string>("UserName")
                         .IsRequired()
-                        .HasMaxLength(24)
-                        .HasColumnType("varchar(24)");
+                        .HasColumnType("longtext");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("Credentials");
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("API.Models.NoteCategoryModels.NoteCategory", b =>
@@ -178,15 +156,6 @@ namespace API.Database.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("API.Models.UserModels.UserCredentials", b =>
-                {
-                    b.HasOne("API.Models.UserModels.User", null)
-                        .WithOne("Credentials")
-                        .HasForeignKey("API.Models.UserModels.UserCredentials", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("API.Models.NoteCategoryModels.NoteCategory", b =>
                 {
                     b.Navigation("Notes");
@@ -199,9 +168,6 @@ namespace API.Database.Migrations
 
             modelBuilder.Entity("API.Models.UserModels.User", b =>
                 {
-                    b.Navigation("Credentials")
-                        .IsRequired();
-
                     b.Navigation("NoteCategories");
 
                     b.Navigation("Notes");
